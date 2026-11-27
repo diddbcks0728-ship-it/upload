@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#d9dadd">
+<title>파일 → 사이트</title>
+<style>
+:root{--ink:#222428;--mut:#62666e;--glass:linear-gradient(145deg,rgba(255,255,255,.66),rgba(255,255,255,.3));--edge:linear-gradient(145deg,#fff,rgba(255,255,255,.2) 40%,rgba(120,125,135,.25) 68%,#fff);--active:linear-gradient(135deg,#6f747d,#40444b)}
+*{box-sizing:border-box}
+html{background:#d9dadd;color-scheme:light}
+body{margin:0;isolation:isolate;color:var(--ink);font-family:-apple-system,system-ui,"Apple SD Gothic Neo",sans-serif;line-height:1.55;word-break:keep-all}
+body::before{content:"";position:fixed;inset:-60px;z-index:-1;background:radial-gradient(circle at 10% 8%,#fff 0,transparent 36%),radial-gradient(circle at 95% 30%,#a9adb5 0,transparent 38%),radial-gradient(circle at 8% 75%,#b9bcc2 0,transparent 34%),radial-gradient(circle at 80% 95%,#f4f4f6 0,transparent 38%),#d9dadd}
+main{max-width:480px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:28px;letter-spacing:-.6px;margin:8px 6px 2px}
+.lead{color:var(--mut);margin:0 6px 20px;font-size:14px}
+.glass,button,.file{position:relative;background:var(--glass);box-shadow:inset 0 0 22px rgba(255,255,255,.35),0 14px 34px rgba(40,44,52,.14);-webkit-backdrop-filter:blur(26px) saturate(160%);backdrop-filter:blur(26px) saturate(160%)}
+.glass::before,button::before,.file::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.3px;pointer-events:none;background:var(--edge);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.glass{border-radius:32px;padding:20px;margin-bottom:14px}
+h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:9px}
+h2 i{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--active);color:#fff;font-style:normal;font-size:13px}
+input[type=password],input[type=text]{width:100%;font:inherit;font-size:16px;padding:13px 18px;border-radius:99px;border:1px solid rgba(80,85,95,.2);background:rgba(255,255,255,.6);color:var(--ink);margin-top:6px}
+a{color:#34373d;font-weight:700}
+small{display:block;color:var(--mut);font-size:12.5px;margin-top:9px}
+#drop{display:block;text-align:center;padding:28px 14px;border:1.5px dashed rgba(70,75,85,.4);border-radius:26px;cursor:pointer;font-weight:700}
+#drop.over{background:rgba(255,255,255,.55)}
+#list{list-style:none;padding:0;margin:0}
+.file{display:flex;justify-content:space-between;gap:10px;border-radius:20px;padding:9px 15px;margin-top:8px;font-size:13px;overflow-wrap:anywhere}
+.file span:last-child{color:var(--mut);white-space:nowrap}
+button{font:inherit;font-weight:800;border:0;border-radius:99px;padding:15px;width:100%;color:var(--ink);cursor:pointer;transition:transform .1s}
+button:active{transform:scale(.97)}button:disabled{opacity:.5}
+button.main{background:var(--active);color:#fff;margin-top:14px}
+.bar{height:8px;border-radius:99px;background:rgba(70,75,85,.15);overflow:hidden;margin-top:14px}
+.bar div{height:100%;width:0;background:var(--active);transition:width .3s}
+#out{white-space:pre-wrap;overflow-wrap:anywhere;font-weight:700;font-size:14px;margin-top:12px}
+#result button{margin-top:10px}
+.app{display:flex;gap:14px;align-items:center}.app>div{flex:1;min-width:0}
+#preview{width:92px;height:92px;border-radius:23px;box-shadow:0 10px 22px rgba(40,44,52,.28)}
+#colors{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+#colors button{width:38px;height:38px;padding:0;border-radius:50%}#colors button[aria-pressed=true]{outline:3px solid #34373d;outline-offset:2px}
+[hidden]{display:none!important}
+</style>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="파일→사이트">
+</head>
+<body>
+<main>
+<h1>파일 → 사이트</h1>
+<p class="lead">파일을 넣으면 GitHub에 올리고, 앱 아이콘까지 만들어 적용해요.</p>
+<form id="form">
+<section class="glass">
+<h2><i>1</i>GitHub 토큰</h2>
+<a href="https://github.com/settings/tokens/new?scopes=repo&description=file-to-site" target="_blank" rel="noopener">토큰 만들기 (repo 체크)</a>
+<input type="text" name="username" value="github-token" autocomplete="username" hidden>
+<input id="token" type="password" name="password" autocomplete="current-password" placeholder="ghp_..." aria-label="GitHub 토큰">
+<small>만료 전까지 같은 토큰을 계속 쓸 수 있어요. 이 사이트는 토큰을 저장하지 않아요. 브라우저의 비밀번호 저장 기능을 쓰면 편해요.</small>
+</section>
+<section class="glass">
+<h2><i>2</i>파일 넣기</h2>
+<label id="drop">＋ 눌러서 고르거나 끌어다 놓기<input id="pick" type="file" multiple hidden></label>
+<ul id="list"></ul>
+<small>모든 형식 가능 · 파일당 25MB 이하 · ZIP은 자동으로 압축을 풀어요.</small>
+</section>
+<section class="glass">
+<h2><i>3</i>앱 아이콘</h2>
+<div class="app"><canvas id="preview" width="512" height="512" role="img" aria-label="아이콘 미리보기"></canvas>
+<div><input id="title" type="text" maxlength="30" placeholder="앱 이름" aria-label="앱 이름"><input id="mark" type="text" maxlength="8" placeholder="아이콘 글자·이모지 (자동)" aria-label="아이콘 글자"></div></div>
+<div id="colors" role="group" aria-label="아이콘 색"></div>
+<small>비워 두면 파일을 보고 알아서 만들어요.</small>
+</section>
+<section class="glass">
+<h2><i>4</i>사이트 만들기</h2>
+<input id="name" type="text" placeholder="사이트 이름 (비우면 자동, 영어·숫자)" autocapitalize="off" aria-label="사이트 이름">
+<button class="main" id="go">사이트 주소 만들기</button>
+<div class="bar" id="bar" hidden><div id="fill"></div></div>
+<div id="out" aria-live="polite"></div>
+<div id="result"></div>
+</section>
+</form>
+<small>⚠️ 올린 파일은 누구나 볼 수 있어요. 개인정보·비밀번호·API 키가 든 파일이나 출처를 모르는 HTML은 올리지 마세요.</small>
+</main>
+<script>
+const $=id=>document.getElementById(id), MAX=25*1024*1024;
+let files=[]; // {name, blob}
+const size=n=>n>1048576?(n/1048576).toFixed(1)+'MB':Math.ceil(n/1024)+'KB';
+const esc=s=>s.replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const path=p=>p.split('/').map(encodeURIComponent).join('/');
+// ZIP 압축 풀기 (저장·deflate 방식)
+async function unzip(file){
+ const buf=await file.arrayBuffer(),v=new DataView(buf),td=new TextDecoder();
+ let e=buf.byteLength-22; while(e>=0&&v.getUint32(e,true)!==0x06054b50)e--;
+ if(e<0)throw new Error('ZIP 파일을 읽을 수 없어요.');
+ let p=v.getUint32(e+16,true);const n=v.getUint16(e+10,true),out=[];
+ if(n>300)throw new Error('ZIP 안의 파일이 너무 많아요 (300개 이하).');
+ for(let i=0;i<n;i++){
+  const flag=v.getUint16(p+8,true),method=v.getUint16(p+10,true),cs=v.getUint32(p+20,true),us=v.getUint32(p+24,true),nl=v.getUint16(p+28,true),xl=v.getUint16(p+30,true),cl=v.getUint16(p+32,true),off=v.getUint32(p+42,true);
+  const name=td.decode(new Uint8Array(buf,p+46,nl));p+=46+nl+xl+cl;
+  if(name.endsWith('/')||/(^|\/)(__MACOSX|\.DS_Store|\.\.|\.git)(\/|$)/.test(name))continue;
+  if(flag&1||![0,8].includes(method))throw new Error('암호가 걸렸거나 지원하지 않는 ZIP이에요.');
+  if(us>MAX)throw new Error(name+' 파일이 25MB를 넘어요.');
+  const start=off+30+v.getUint16(off+26,true)+v.getUint16(off+28,true);
+  let blob=new Blob([buf.slice(start,start+cs)]);
+  if(method===8)blob=await new Response(blob.stream().pipeThrough(new DecompressionStream('deflate-raw'))).blob();
+  out.push({name,blob});
+ }
+ // 모두 한 폴더 안에 있으면 그 폴더를 벗겨냄
+ const top=out[0]?.name.split('/')[0]+'/';
+ if(out.length&&out.every(f=>f.name.startsWith(top)))out.forEach(f=>f.name=f.name.slice(top.length));
+ return out;
+}
+const COLORS=[['회색','#e9eaee','#9da1aa','#43464e'],['검정','#7a7d85','#383a40','#0e0f12'],['파랑','#bcd4ff','#6d8df0','#33459e'],['보라','#dccbff','#9b78ee','#52329e'],['초록','#c5f1da','#4fbd8b','#1d6a50'],['분홍','#ffd7e4','#ee7fa6','#9b365d']];
+let color=0;
+const firstChar=t=>{const x=t.trim();if(!x)return '';const g=window.Intl&&Intl.Segmenter?[...new Intl.Segmenter().segment(x)][0].segment:Array.from(x)[0];return g.toUpperCase();};
+// HTML의 <title>, 없으면 파일 이름
+let autoTitle='';
+const appTitle=()=>$('title').value.trim()||autoTitle||'내 앱';
+function draw(n,scale){
+ const c=document.createElement('canvas');c.width=c.height=n;const x=c.getContext('2d'),k=n/200;x.scale(k,k);
+ const [,a,b,d]=COLORS[color],grad=(stops,y0=0)=>{const g=x.createLinearGradient(0,y0,200,200);stops.forEach(([p,v])=>g.addColorStop(p,v));return g;};
+ const circle=(cx,cy,r,f)=>{x.fillStyle=f;x.beginPath();x.arc(cx,cy,r,0,7);x.fill();};
+ const box=(bx,by,w,h,r)=>{x.beginPath();x.moveTo(bx+r,by);x.arcTo(bx+w,by,bx+w,by+h,r);x.arcTo(bx+w,by+h,bx,by+h,r);x.arcTo(bx,by+h,bx,by,r);x.arcTo(bx,by,bx+w,by,r);x.closePath();};
+ x.fillStyle=grad([[0,a],[.5,b],[1,d]]);x.fillRect(0,0,200,200);
+ circle(48,40,62,'rgba(255,255,255,.33)');circle(165,168,55,'rgba(0,0,0,.2)');
+ x.translate(100,100);x.scale(scale,scale);x.translate(-100,-100);
+ box(38,44,124,124,40);x.fillStyle='rgba(10,10,20,.16)';x.fill();
+ box(38,36,124,124,40);x.fillStyle=grad([[0,'rgba(255,255,255,.85)'],[1,'rgba(255,255,255,.38)']],36);x.fill();
+ x.lineWidth=3;x.strokeStyle=grad([[0,'#fff'],[.45,'rgba(255,255,255,.2)'],[1,'rgba(255,255,255,.9)']]);x.stroke();
+ const t=firstChar($('mark').value||appTitle());
+ x.fillStyle=d;x.textAlign='center';x.textBaseline='alphabetic';x.font='800 70px -apple-system,system-ui,sans-serif';
+ const m=x.measureText(t);x.fillText(t,100,98+(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2,100);
+ return c;
+}
+function preview(){const x=$('preview').getContext('2d');x.drawImage(draw(512,1.08),0,0);}
+COLORS.forEach((c,i)=>{const b=document.createElement('button');b.type='button';b.title=c[0];b.setAttribute('aria-label',c[0]);b.style.background=`linear-gradient(135deg,${c[1]},${c[2]},${c[3]})`;b.setAttribute('aria-pressed',i===0);
+ b.onclick=()=>{color=i;[...$('colors').children].forEach((e,j)=>e.setAttribute('aria-pressed',j===i));preview();};$('colors').appendChild(b);});
+$('title').oninput=$('mark').oninput=preview;
+async function guessTitle(){
+ autoTitle='';
+ const htmls=files.filter(f=>/\.html?$/i.test(f.name)&&!f.name.includes('/'));
+ const main=htmls.find(f=>f.name==='index.html')||htmls[0];
+ if(main){const t=new DOMParser().parseFromString(await main.blob.text(),'text/html').title.trim();autoTitle=t.includes('�')?'':t;}
+ if(!autoTitle&&files[0])autoTitle=(main||files[0]).name.split('/').pop().replace(/\.[^.]*$/,'').replace(/^index$/i,'');
+ autoTitle=autoTitle.slice(0,30);$('title').placeholder=autoTitle||'앱 이름';preview();
+}
+const png=c=>new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error('아이콘을 만들지 못했어요.')),'image/png'));
+// index.html에 아이콘·설치 정보 넣기 (바이트를 그대로 보존해 한글 인코딩이 깨지지 않게)
+async function inject(blob,title){
+ const bytes=new Uint8Array(await blob.arrayBuffer());let s='';
+ for(let i=0;i<bytes.length;i+=32768)s+=String.fromCharCode(...bytes.subarray(i,i+32768));
+ const safe=title.replace(/[^\x20-\x7e]|[&<>"']/gu,c=>'&#'+c.codePointAt(0)+';');
+ s=s.replace(/<link\b[^>]*\brel\s*=\s*["']?(?:manifest|icon|shortcut icon|apple-touch-icon(?:-precomposed)?)["'\s\/>][^>]*>/gi,m=>m.endsWith('>')?'':m)
+    .replace(/<meta\b[^>]*\bname\s*=\s*["'](?:apple-mobile-web-app-title|mobile-web-app-capable)["'][^>]*>/gi,'');
+ const hasSW=/serviceWorker\s*\.\s*register/.test(s);
+ const tags='\n<link rel="manifest" href="app.webmanifest">\n<link rel="icon" type="image/png" href="app-icon-192.png">\n<link rel="apple-touch-icon" href="app-icon-apple.png">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-title" content="'+safe+'">\n'
+   +(hasSW?'':'<script>if("serviceWorker" in navigator)navigator.serviceWorker.register("app-sw.js").catch(function(){});<\/script>\n');
+ const at=[/<\/head\s*>/i,/<body\b/i].map(r=>s.search(r)).find(i=>i>=0);
+ if(at!==undefined)s=s.slice(0,at)+tags+s.slice(at);
+ else{const d=s.match(/^(?:\xef\xbb\xbf)?\s*(?:<!doctype[^>]*>)?\s*(?:<html\b[^>]*>)?\s*(?:<head\b[^>]*>)?/i)[0].length;s=s.slice(0,d)+tags+s.slice(d);}
+ return new Blob([Uint8Array.from(s,c=>c.charCodeAt(0))]);
+}
+async function addApp(list){
+ const title=appTitle(),index=list.find(f=>f.name==='index.html');
+ index.blob=await inject(index.blob,title);
+ const add=(name,blob)=>{const old=list.find(f=>f.name===name);old?old.blob=blob:list.push({name,blob});};
+ for(const [name,n,k] of [['app-icon-192.png',192,1.08],['app-icon-512.png',512,1.08],['app-icon-maskable.png',512,.88],['app-icon-apple.png',180,1.08]])add(name,await png(draw(n,k)));
+ const icons=[['app-icon-192.png','192x192','any'],['app-icon-512.png','512x512','any'],['app-icon-maskable.png','512x512','maskable']].map(([src,sizes,purpose])=>({src,sizes,purpose,type:'image/png'}));
+ add('app.webmanifest',new Blob([JSON.stringify({name:title,short_name:title.slice(0,12),start_url:'./',scope:'./',display:'standalone',background_color:'#ffffff',theme_color:COLORS[color][2],icons})]));
+ add('app-sw.js',new Blob(["self.addEventListener('fetch',function(){});\n"]));
+}
+function show(){$('list').innerHTML=files.map(f=>`<li class="file"><span>${esc(f.name)}</span><span>${size(f.blob.size)}</span></li>`).join('');}
+async function choose(list){
+ $('out').textContent='';$('result').textContent='';files=[];
+ try{
+  for(const f of list){
+   if(/\.zip$/i.test(f.name))files.push(...await unzip(f));else files.push({name:f.name,blob:f});
+  }
+  const big=files.find(f=>f.blob.size>MAX);if(big)throw new Error(big.name+' 파일이 25MB를 넘어요.');
+  if(new Set(files.map(f=>f.name)).size<files.length)throw new Error('이름이 같은 파일이 있어요.');
+ }catch(e){files=[];$('out').textContent=e.message;}
+ show();await guessTitle();
+}
+$('pick').onchange=e=>choose([...e.target.files]);
+const drop=$('drop');
+document.ondragover=e=>{e.preventDefault();drop.classList.add('over');};
+document.ondragleave=()=>drop.classList.remove('over');
+document.ondrop=e=>{e.preventDefault();drop.classList.remove('over');if(!$('go').disabled)choose([...e.dataTransfer.files]);};
+async function api(p,method='GET',body){
+ let r;try{r=await fetch('https://api.github.com'+p,{method,cache:'no-store',headers:{Authorization:'Bearer '+$('token').value.trim(),Accept:'application/vnd.github+json'},body:body&&JSON.stringify(body)});}
+ catch(e){throw new Error('GitHub에 연결하지 못했어요. 인터넷 연결을 확인하세요.');}
+ const d=await r.json().catch(()=>({}));
+ if(!r.ok){const m=r.status===401?'토큰이 틀렸거나 만료됐어요.':r.status===422&&p==='/user/repos'?'같은 이름이 이미 있어요. 다른 이름을 써주세요.':(d.message||'오류')+' ('+r.status+')';const e=new Error(m);e.status=r.status;throw e;}
+ return d;
+}
+const b64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]||'');r.onerror=()=>no(r.error);r.readAsDataURL(b);});
+function listing(list){
+ const items=list.map(f=>{const u=path(f.name),n=esc(f.name);
+  const view=/\.(png|jpe?g|gif|webp|svg|avif)$/i.test(n)?`<img src="${u}" alt="">`:/\.(mp4|webm|mov)$/i.test(n)?`<video src="${u}" controls></video>`:/\.(mp3|wav|m4a|ogg)$/i.test(n)?`<audio src="${u}" controls></audio>`:'';
+  return `<li>${view}<a href="${u}">${n}</a></li>`;}).join('');
+ return `<!DOCTYPE html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>파일 목록</title><style>body{margin:0;padding:24px;background:#d9dadd;font-family:system-ui;color:#222}ul{list-style:none;padding:0;max-width:520px}li{background:rgba(255,255,255,.6);border:1px solid #fff;border-radius:24px;padding:16px;margin-bottom:12px;overflow-wrap:anywhere}img,video,audio{display:block;width:100%;border-radius:14px;margin-bottom:8px}a{color:#222;font-weight:700}</style><h2>파일 목록</h2><ul>${items}</ul>`;
+}
+preview();
+$('form').onsubmit=async ev=>{
+ ev.preventDefault();
+ const out=$('out'),custom=$('name').value.trim();
+ if(!$('token').value.trim())return out.textContent='토큰을 넣어주세요.';
+ if(!files.length)return out.textContent='파일을 넣어주세요.';
+ if(custom&&!/^[A-Za-z0-9_-]{1,80}$/.test(custom))return out.textContent='이름은 영어, 숫자, -, _ 만 가능해요.';
+ $('go').disabled=$('pick').disabled=true;$('result').textContent='';$('bar').hidden=false;$('fill').style.width='3%';
+ let made='';
+ try{
+  const list=files.map(f=>({...f}));
+  const htmls=list.filter(f=>/\.html?$/i.test(f.name)&&!f.name.includes('/'));
+  if(!list.some(f=>f.name==='index.html')&&htmls.length===1)htmls[0].name='index.html';
+  if(!list.some(f=>f.name==='index.html'))list.push({name:'index.html',blob:new Blob([listing(list)])});
+  out.textContent='아이콘 만드는 중...';
+  await addApp(list);
+  if(!list.some(f=>f.name==='.nojekyll'))list.unshift({name:'.nojekyll',blob:new Blob([])});
+  out.textContent='저장소 만드는 중...';
+  const repo=await api('/user/repos','POST',{name:custom||'site-'+Date.now().toString(36),auto_init:true});
+  made=repo.html_url;
+  await new Promise(r=>setTimeout(r,1500));
+  const base='/repos/'+repo.full_name,branch=repo.default_branch;
+  for(let i=0;i<list.length;i++){
+   out.textContent=`올리는 중 ${i+1}/${list.length}`;
+   await api(base+'/contents/'+path(list[i].name),'PUT',{message:'upload',content:await b64(list[i].blob),branch});
+   $('fill').style.width=(i+1)/list.length*90+'%';
+  }
+  out.textContent='사이트 켜는 중...';
+  await api(base+'/pages','POST',{source:{branch,path:'/'}});
+  $('fill').style.width='100%';
+  const url=`https://${repo.owner.login.toLowerCase()}.github.io/${repo.name}/`;
+  out.textContent='완성! 1~2분 뒤에 열어보세요.\n';
+  const a=Object.assign(document.createElement('a'),{href:url,textContent:url,target:'_blank',rel:'noopener'});out.appendChild(a);
+  const c=Object.assign(document.createElement('button'),{type:'button',textContent:'주소 복사'});
+  c.onclick=()=>navigator.clipboard.writeText(url).then(()=>c.textContent='복사됐어요 ✓').catch(()=>c.textContent='주소를 길게 눌러 복사하세요');
+  $('result').appendChild(c);
+ }catch(e){out.textContent='실패: '+e.message+(made?'\n만들다 만 저장소가 남아 있어요: '+made:'');$('bar').hidden=true;}
+ $('go').disabled=$('pick').disabled=false;
+};
+</script>
+</body>
+</html>
