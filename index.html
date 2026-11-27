@@ -37,7 +37,12 @@ button.main{background:var(--active);color:#fff;margin-top:14px}
 .app{display:flex;gap:14px;align-items:center}.app>div{flex:1;min-width:0}
 #preview{width:92px;height:92px;border-radius:23px;box-shadow:0 10px 22px rgba(40,44,52,.28)}
 #colors{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
-#colors button{width:38px;height:38px;padding:0;border-radius:50%}#colors button[aria-pressed=true]{outline:3px solid #34373d;outline-offset:2px}
+#colors button{width:36px;height:36px;padding:0;border-radius:50%}
+h3{font-size:13px;margin:18px 0 8px}#what{margin:12px 0 8px;font-size:13px;font-weight:700;text-align:center}#random{padding:11px}
+#styles{display:flex;gap:10px;overflow-x:auto;padding:5px 3px 10px}#icons{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-height:300px;overflow:auto;padding:5px;margin-top:8px}
+#groups{display:flex;gap:6px;overflow-x:auto;padding:3px}#groups button{width:auto;white-space:nowrap;padding:8px 13px;font-size:12.5px;box-shadow:none;border:1px solid #fff}#groups button[aria-pressed=true]{background:var(--active);color:#fff}
+button.tile{background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;padding:0;border-radius:0;width:100%;font-size:10.5px;font-weight:700}button.tile::before{display:none}
+#styles button.tile{width:64px;flex-shrink:0}.tile canvas{display:block;width:100%;aspect-ratio:1;border-radius:24%;margin-bottom:4px;box-shadow:0 4px 10px rgba(40,44,52,.18)}.tile span{display:block;white-space:nowrap;overflow:hidden}.tile[aria-pressed=true] canvas{outline:3px solid #34373d;outline-offset:2px}#colors button[aria-pressed=true]{outline:3px solid #34373d;outline-offset:2px}
 [hidden]{display:none!important}
 </style>
 <link rel="manifest" href="manifest.json">
@@ -68,7 +73,10 @@ button.main{background:var(--active);color:#fff;margin-top:14px}
 <h2><i>3</i>앱 아이콘</h2>
 <div class="app"><canvas id="preview" width="512" height="512" role="img" aria-label="아이콘 미리보기"></canvas>
 <div><input id="title" type="text" maxlength="30" placeholder="앱 이름" aria-label="앱 이름"><input id="mark" type="text" maxlength="8" placeholder="아이콘 글자·이모지 (자동)" aria-label="아이콘 글자"></div></div>
-<div id="colors" role="group" aria-label="아이콘 색"></div>
+<p id="what"></p><button type="button" id="random">🎲 랜덤으로 바꾸기</button>
+<h3>디자인 24종</h3><div id="styles"></div>
+<h3>색 18종</h3><div id="colors" role="group" aria-label="아이콘 색"></div>
+<h3>그림</h3><div id="groups"></div><div id="icons"></div>
 <small>비워 두면 파일을 보고 알아서 만들어요.</small>
 </section>
 <section class="glass">
@@ -111,39 +119,173 @@ async function unzip(file){
  if(out.length&&out.every(f=>f.name.startsWith(top)))out.forEach(f=>f.name=f.name.slice(top.length));
  return out;
 }
-const COLORS=[['회색','#e9eaee','#9da1aa','#43464e'],['검정','#7a7d85','#383a40','#0e0f12'],['파랑','#bcd4ff','#6d8df0','#33459e'],['보라','#dccbff','#9b78ee','#52329e'],['초록','#c5f1da','#4fbd8b','#1d6a50'],['분홍','#ffd7e4','#ee7fa6','#9b365d']];
-let color=0;
-const firstChar=t=>{const x=t.trim();if(!x)return '';const g=window.Intl&&Intl.Segmenter?[...new Intl.Segmenter().segment(x)][0].segment:Array.from(x)[0];return g.toUpperCase();};
-// HTML의 <title>, 없으면 파일 이름
-let autoTitle='';
-const appTitle=()=>$('title').value.trim()||autoTitle||'내 앱';
-function draw(n,scale){
- const c=document.createElement('canvas');c.width=c.height=n;const x=c.getContext('2d'),k=n/200;x.scale(k,k);
- const [,a,b,d]=COLORS[color],grad=(stops,y0=0)=>{const g=x.createLinearGradient(0,y0,200,200);stops.forEach(([p,v])=>g.addColorStop(p,v));return g;};
- const circle=(cx,cy,r,f)=>{x.fillStyle=f;x.beginPath();x.arc(cx,cy,r,0,7);x.fill();};
- const box=(bx,by,w,h,r)=>{x.beginPath();x.moveTo(bx+r,by);x.arcTo(bx+w,by,bx+w,by+h,r);x.arcTo(bx+w,by+h,bx,by+h,r);x.arcTo(bx,by+h,bx,by,r);x.arcTo(bx,by,bx+w,by,r);x.closePath();};
- x.fillStyle=grad([[0,a],[.5,b],[1,d]]);x.fillRect(0,0,200,200);
- circle(48,40,62,'rgba(255,255,255,.33)');circle(165,168,55,'rgba(0,0,0,.2)');
- x.translate(100,100);x.scale(scale,scale);x.translate(-100,-100);
- box(38,44,124,124,40);x.fillStyle='rgba(10,10,20,.16)';x.fill();
- box(38,36,124,124,40);x.fillStyle=grad([[0,'rgba(255,255,255,.85)'],[1,'rgba(255,255,255,.38)']],36);x.fill();
- x.lineWidth=3;x.strokeStyle=grad([[0,'#fff'],[.45,'rgba(255,255,255,.2)'],[1,'rgba(255,255,255,.9)']]);x.stroke();
- const t=firstChar($('mark').value||appTitle());
- x.fillStyle=d;x.textAlign='center';x.textBaseline='alphabetic';x.font='800 70px -apple-system,system-ui,sans-serif';
- const m=x.measureText(t);x.fillText(t,100,98+(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2,100);
+// ===== 아이콘 라이브러리 (100x100 좌표, 직접 그린 선 그림) =====
+const circ=(x,y,r)=>`M${x-r} ${y}a${r} ${r} 0 1 0 ${2*r} 0a${r} ${r} 0 1 0 ${-2*r} 0Z`;
+const rr=(x,y,w,h,r)=>`M${x+r} ${y}h${w-2*r}a${r} ${r} 0 0 1 ${r} ${r}v${h-2*r}a${r} ${r} 0 0 1 ${-r} ${r}h${2*r-w}a${r} ${r} 0 0 1 ${-r} ${-r}v${2*r-h}a${r} ${r} 0 0 1 ${r} ${-r}Z`;
+const GROUPS={
+'소통':{
+ '채팅':[rr(12,18,76,54,24)+'M32 72L26 88L48 72','채팅|톡|chat|message|메시지'],
+ '대화':[rr(10,14,56,42,18)+'M24 56L20 68L36 56M74 40h2q14 0 14 14v8q0 14-12 14l4 12-18-12H52q-8 0-12-6','대화|커뮤니티|게시판|talk|board'],
+ '메일':[rr(12,22,76,56,10)+'M16 28L50 54L84 28','메일|편지|mail'],
+ '전화':['M28 14l14 4 6 18-10 8q8 14 18 18l8-10 18 6 4 14q-4 14-20 12C38 78 18 52 14 32q0-14 14-18Z','전화|call|phone'],
+ '전송':['M12 46L88 14L70 86L48 62ZM48 62L88 14M48 62v22l12-14','전송|send|dm'],
+ '친구':[circ(36,34,15)+'M10 82q4-26 26-26t26 26'+circ(70,40,11)+'M68 60q18-2 22 20','친구|모임|팀|friend|team|반'],
+ '알림':['M50 14c-18 0-24 14-24 30v14l-9 14h66l-9-14V44c0-16-6-30-24-30ZM40 80q10 14 20 0','알림|공지|notice|alert']},
+'미디어':{
+ '카메라':['M14 30h16l8-12h24l8 12h16v50H14Z'+circ(50,54,16),'카메라|camera'],
+ '사진':[rr(14,14,72,72,14)+circ(36,36,7)+'M18 74l22-22 16 16 12-12 16 16','사진|갤러리|앨범|photo|gallery|image'],
+ '음악':['M38 72V22l40-8v50'+circ(28,72,10)+circ(68,64,10),'음악|노래|music|song|플레이'],
+ '헤드폰':['M18 66V50a32 32 0 0 1 64 0v16'+rr(14,58,18,28,8)+rr(68,58,18,28,8),'헤드폰|듣기|팟캐스트|podcast|audio'],
+ '영상':[rr(10,24,80,52,14)+'M42 38l22 12-22 12Z','영상|동영상|video|movie|영화'],
+ 'TV':[rr(12,30,76,52,10)+'M34 14l16 16 16-16','tv|방송'],
+ '마이크':[rr(37,12,26,46,13)+'M22 46a28 28 0 0 0 56 0M50 74v14M36 88h28','녹음|마이크|voice|mic|발음'],
+ '그림':['M50 12a38 38 0 1 0 0 76c12 0 4-14 14-18s24 4 24-14C88 32 72 12 50 12Z'+circ(32,40,3)+circ(48,28,3)+circ(66,34,3)+circ(32,60,3),'그림|미술|art|paint|draw'],
+ '게임':['M28 30h44q18 0 18 26 0 24-14 20L62 64H38L24 76Q10 80 10 56q0-26 18-26ZM30 42v16M22 50h16'+circ(66,45,3)+circ(74,55,3),'게임|game|퀴즈'],
+ '주사위':[rr(16,16,68,68,18)+circ(34,34,3)+circ(66,34,3)+circ(50,50,3)+circ(34,66,3)+circ(66,66,3),'주사위|랜덤|룰렛|뽑기|dice']},
+'공부·일':{
+ '책':['M50 26C40 16 24 16 12 20v58c12-4 28-4 38 6 10-10 26-10 38-6V20c-12-4-28-4-38 6ZM50 26v58','책|독서|공부|단어|영어|book|study|word|read'],
+ '졸업':['M8 38L50 20l42 18-42 18ZM26 46v22q24 18 48 0V46M92 38v26','학교|수업|school|class|edu'],
+ '메모':[rr(20,12,60,76,10)+'M34 34h32M34 50h32M34 66h18','메모|노트|memo|note|일기|list|목록'],
+ '연필':['M18 82l4-20 46-46 16 16-46 46ZM58 26l16 16M22 62l16 16','쓰기|펜|edit|write|blog|블로그'],
+ '할 일':[rr(14,14,72,72,20)+'M30 52l14 14 28-30','할일|할 일|체크|todo|task|check'],
+ '달력':[rr(14,20,72,66,12)+'M14 40h72M32 12v16M68 12v16M30 56h8M46 56h8M62 56h8M30 70h8M46 70h8','달력|일정|캘린더|calendar|plan|급식'],
+ '시계':[circ(50,50,38)+'M50 28v22l16 10','시계|시간|clock|time'],
+ '타이머':[circ(50,56,32)+'M50 56l14-14M40 10h20M50 10v14M76 28l8-8','타이머|스톱워치|timer|집중'],
+ '계산기':[rr(20,10,60,80,12)+rr(31,22,38,16,4)+'M34 54h1M50 54h1M66 54h1M34 72h1M50 72h1M66 72h1','계산|수학|calc|math'],
+ '번역':['M12 24h40M32 14v10M44 24q-8 28-32 38M20 36q8 18 28 24M50 86l18-44 18 44M57 70h22','번역|언어|translate|lang'],
+ '폴더':['M10 24h30l8 10h42v46H10Z','폴더|파일|folder|file|자료'],
+ '코드':['M34 28L12 50l22 22M66 28l22 22-22 22M58 18L42 82','코드|개발|code|dev'],
+ '그래프':['M14 14v72h72M30 70V52M48 70V30M66 70V42M82 70V22','통계|기록|그래프|chart|stat|data'],
+ '아이디어':['M36 66C18 52 22 14 50 14s32 38 14 52v10H36ZM40 88h20','아이디어|idea|팁']},
+'생활':{
+ '집':['M12 48L50 14l38 34M22 42v44h56V42M42 86V62h16v24','홈|집|home|house'],
+ '지도':['M50 90C30 66 22 54 22 40a28 28 0 0 1 56 0c0 14-8 26-28 50Z'+circ(50,40,10),'지도|위치|map|place|맛집'],
+ '장바구니':['M10 18h14l10 48h42l12-34H29'+circ(40,80,6)+circ(70,80,6),'쇼핑|상점|마켓|shop|store|cart'],
+ '가방':['M22 32h56l6 56H16ZM36 40V28a14 14 0 0 1 28 0v12','가방|구매|bag'],
+ '지갑':[rr(12,22,76,58,12)+'M12 38h76M64 52h24v16H64a8 8 0 0 1 0-16Z','지갑|돈|가계부|결제|money|wallet|pay'],
+ '선물':[rr(16,42,68,44,6)+rr(10,28,80,14,4)+'M50 28v58M50 28C28 28 26 8 40 12q8 4 10 16 2-12 10-16c14-4 12 16-10 16','선물|이벤트|gift'],
+ '음식':['M24 12v24q0 10 10 10t10-10V12M34 12v76M72 88V12c-18 8-18 36-12 48h12','음식|식당|요리|레시피|food|recipe|메뉴'],
+ '커피':['M18 36h50v24q0 24-25 24T18 60ZM68 42h6q12 2 8 14t-16 10M32 12v12M48 12v12','카페|커피|coffee|cafe'],
+ '자동차':['M14 70V52l10-24h52l10 24v18ZM14 52h72M24 70v12M76 70v12'+circ(28,61,3)+circ(72,61,3),'차|택시|운전|car|drive'],
+ '버스':[rr(18,12,64,66,14)+'M18 48h64M30 78v10M70 78v10M32 63h4M64 63h4','버스|교통|bus|지하철'],
+ '비행기':['M50 8q8 6 8 22v8l32 20v10L58 58l-2 18 12 10v6l-18-6-18 6v-6l12-10-2-18-32 10V58l32-20v-8q0-16 8-22Z','여행|항공|trip|travel|flight'],
+ '자전거':[circ(24,66,18)+circ(76,66,18)+'M24 66l18-30h24l10 30M42 36l14 30H24M36 26h12M66 36l-4-14h10','자전거|bike'],
+ '열쇠':[circ(32,50,18)+'M50 50h40M76 50v16M90 50v12','열쇠|비밀번호|key'],
+ '자물쇠':[rr(20,42,60,46,12)+'M32 42V30a18 18 0 0 1 36 0v12M50 58v14','보안|잠금|lock|secure']},
+'건강·자연':{
+ '하트':['M50 84C20 64 12 50 12 36c0-24 30-30 38-8 8-22 38-16 38 8 0 14-8 28-38 48Z','하트|좋아|사랑|건강|health|love|like'],
+ '심박':['M8 52h22l10-26 18 50 10-24h24','심박|운동기록|pulse|병원'],
+ '운동':['M30 50h40M30 28v44M18 36v28M70 28v44M82 36v28M8 50h10M82 50h10','운동|헬스|fit|gym'],
+ '새싹':['M50 88V50M50 56C24 58 14 40 16 24c22-2 36 10 34 32ZM50 46c0-22 14-34 34-32 2 18-10 34-34 32Z','식물|성장|습관|자연|plant|habit|grow'],
+ '발바닥':['M50 50c-16 0-28 22-20 32 6 8 12 0 20 0s14 8 20 0c8-10-4-32-20-32Z'+circ(22,44,8)+circ(38,24,8)+circ(62,24,8)+circ(78,44,8),'동물|강아지|고양이|펫|pet|dog|cat|병아리|키우기'],
+ '해':[circ(50,50,18)+'M50 8v12M50 80v12M8 50h12M80 50h12M20 20l9 9M71 71l9 9M80 20l-9 9M29 71l-9 9','해|아침|sun'],
+ '달':['M62 12C36 16 22 40 30 62s34 32 56 18C60 82 38 40 62 12Z','달|밤|수면|잠|moon|sleep'],
+ '날씨':['M32 78a20 20 0 0 1 0-40 24 24 0 0 1 46 6 17 17 0 0 1-4 34Z','날씨|구름|클라우드|weather|cloud'],
+ '물방울':['M50 10C34 34 22 48 22 62a28 28 0 0 0 56 0C78 48 66 34 50 10Z','물|수분|water|drink'],
+ '불꽃':['M50 10c4 22 30 28 28 52-2 36-54 36-56 0 0-14 8-24 14-28 0 10 4 16 10 16C40 34 40 22 50 10Z','불|챌린지|연속|fire|hot']},
+'기타':{
+ '업로드':['M50 66V14M26 36l24-22 24 22M14 62v12q0 12 12 12h48q12 0 12-12V62','업로드|사이트|upload'],
+ '다운로드':['M50 14v52M26 44l24 22 24-22M14 86h72','다운|download'],
+ '검색':[circ(42,42,28)+'M63 63l24 24','검색|찾기|search'],
+ '설정':[circ(50,50,13)+'M42 12h16l3 12 10 6 12-4 8 14-9 9v10l9 9-8 14-12-4-10 6-3 12H42l-3-12-10-6-12 4-8-14 9-9V45l-9-9 8-14 12 4 10-6Z','설정|도구|tool|setting'],
+ '별':['M50 10l12 26 28 3-21 20 6 29-25-15-25 15 6-29-21-20 28-3Z','별|즐겨|star|fav|덕질'],
+ '번개':['M56 8L20 56h24l-6 36 40-52H52Z','빠른|번개|fast|bolt'],
+ '로켓':['M50 8c20 14 24 38 14 60H36C26 46 30 22 50 8ZM36 52L20 68v14l18-12M64 52l16 16v14L62 70M44 80v10M56 80v10'+circ(50,36,8),'로켓|시작|launch|rocket'],
+ '지구':[circ(50,50,38)+'M12 50h76M50 12c-24 22-24 54 0 76 24-22 24-54 0-76Z','지구|웹|인터넷|world|web'],
+ '북마크':['M26 12h48v76L50 68 26 88Z','저장|북마크|bookmark'],
+ '신문':[rr(12,18,76,64,8)+rr(24,30,24,20,3)+'M58 32h18M58 46h18M24 64h52','뉴스|신문|news'],
+ '반짝':['M42 16q6 28 32 32-26 6-32 34-6-28-32-34 26-4 32-32ZM76 10q2 10 12 12-10 2-12 12-2-10-12-12 10-2 12-12Z','ai|마법|magic|spark'],
+ '왕관':['M16 74L10 28l22 18 18-30 18 30 22-18-6 46ZM18 86h64','왕|프리미엄|crown|rank']}};
+const ICONS=Object.assign({},...Object.values(GROUPS));
+const COLORS=[['회색','#e9eaee','#9da1aa','#43464e'],['검정','#7a7d85','#303238','#08090b'],['하늘','#c5ecff','#4db8f5','#1668b0'],['파랑','#bcd4ff','#4f76ee','#1f2f93'],['남색','#98a4e8','#3a428f','#121640'],['보라','#ddccff','#9566ee','#46229a'],['자주','#f4c8f4','#c24fc8','#6a1672'],['분홍','#ffd7e6','#f4729f','#a8275c'],['빨강','#ffc4bd','#ee4b4b','#8f1420'],['주황','#ffdcb5','#ff8a3d','#b0400c'],['노랑','#fff4b8','#ffcc2f','#a36a00'],['연두','#e3f8b5','#92cf3c','#3f6f0c'],['초록','#c5f1da','#34b97e','#0d634a'],['민트','#d0fbf4','#3fd0c2','#0d6a74'],['갈색','#ecd6c0','#ad7b54','#523019'],['크림','#fffaf0','#eadcc2','#8a7250'],['노을','#ffd36e','#f2628c','#5b2fa8'],['바다','#9ff3d0','#2f9be0','#32278c']];
+// [이름, 방식]
+const STYLES=['리퀴드 글래스','그라데이션','플랫','미니멀 화이트','다크','네온','파스텔','3D 젤리','클레이','뉴모피즘','오로라','서리 유리','메탈','종이 겹침','레트로','팝아트','스티커','라인','듀오톤','픽셀','노트','청사진','우주','물결'];
+function render(n,scale,o){
+ const c=document.createElement('canvas');c.width=c.height=n;const x=c.getContext('2d');x.scale(n/200,n/200);
+ const [,a,b,d]=COLORS[o.color],st=STYLES[o.style];x.lineCap=x.lineJoin='round';
+ const lin=(list,p=[0,0,200,200])=>{const g=x.createLinearGradient(...p);list.forEach((v,i)=>g.addColorStop(i/(list.length-1),v));return g;};
+ const fill=f=>{x.fillStyle=f;x.fillRect(0,0,200,200);};
+ const dot=(cx,cy,r,f)=>{x.fillStyle=f;x.beginPath();x.arc(cx,cy,r,0,7);x.fill();};
+ const blob=(cx,cy,r,col)=>{const g=x.createRadialGradient(cx,cy,0,cx,cy,r);g.addColorStop(0,col);g.addColorStop(1,col+'00');dot(cx,cy,r,g);};
+ const shadow=(col,blur,dy=0,dx=0)=>{const k=n/200;x.shadowColor=col;x.shadowBlur=blur*k;x.shadowOffsetY=dy*k;x.shadowOffsetX=dx*k;};
+ const box=(bx,by,w,h,r,f)=>{x.fillStyle=f;x.fill(new Path2D(rr(bx,by,w,h,r)));};
+ const rim=(bx,by,w,h,r)=>{x.lineWidth=2.500;x.strokeStyle=lin(['#fff','rgba(255,255,255,.1)','rgba(255,255,255,.85)']);x.stroke(new Path2D(rr(bx,by,w,h,r)));};
+ // 가운데 그림 (선 또는 글자)
+ const glyph=(col,w=8,size=96,dx=0,dy=0,outline=false)=>{
+  x.save();x.translate(100+dx,100+dy);
+  const t=o.text;
+  if(t){x.font=`900 ${size*.82}px -apple-system,system-ui,sans-serif`;x.textAlign='center';const m=x.measureText(t),y=(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2;
+   if(outline){x.lineWidth=w*.45;x.strokeStyle=col;x.strokeText(t,0,y,130);}else{x.fillStyle=col;x.fillText(t,0,y,130);}}
+  else{x.scale(size/100,size/100);x.translate(-50,-50);x.strokeStyle=col;x.lineWidth=w;x.stroke(new Path2D(ICONS[o.icon][0]));}
+  x.restore();
+ };
+ const inner=f=>{x.save();x.translate(100,100);x.scale(scale,scale);x.translate(-100,-100);f();x.restore();};
+ switch(st){
+  case '리퀴드 글래스':fill(lin([a,b,d]));dot(48,40,62,'rgba(255,255,255,.33)');dot(165,168,55,'rgba(0,0,0,.18)');inner(()=>{shadow('rgba(10,10,30,.3)',18,9);box(34,34,132,132,44,lin(['rgba(255,255,255,.62)','rgba(255,255,255,.16)']));shadow('transparent',0);rim(34,34,132,132,44);shadow('rgba(0,0,0,.22)',5,3);glyph('#fff',8,86);});break;
+  case '그라데이션':fill(lin([a,b,d]));inner(()=>{shadow('rgba(0,0,0,.22)',10,5);glyph('#fff',8,108);});break;
+  case '플랫':fill(b);inner(()=>glyph('#fff',9,108));break;
+  case '미니멀 화이트':fill('#fff');inner(()=>glyph(lin([b,d],[50,50,150,150]),7.500,104));break;
+  case '다크':fill(lin(['#2c2e36','#0b0c0f']));blob(100,100,110,b+'');x.globalAlpha=.55;fill('#0c0d10');x.globalAlpha=1;inner(()=>glyph(lin(['#fff',a,b],[50,50,150,150]),8,106));break;
+  case '네온':fill('#07070d');inner(()=>{shadow(b,26);glyph(b,9,104);glyph(b,9,104);shadow(b,8);glyph('#fff',3.500,104);});break;
+  case '파스텔':fill(lin(['#fff',a]));dot(160,45,40,'rgba(255,255,255,.6)');inner(()=>{dot(100,100,68,'rgba(255,255,255,.72)');glyph(d,7.500,82);});break;
+  case '3D 젤리':fill(lin([a,b]));inner(()=>{for(let i=9;i>0;i--)glyph(d,13,100,i*.5,i);shadow('rgba(0,0,0,.25)',9,6);glyph('#fff',13,100);shadow('transparent',0);glyph(a,3,100,-1,-2);});dot(52,34,9,'rgba(255,255,255,.65)');break;
+  case '클레이':fill(a);inner(()=>{shadow(d+'88',22,14,8);box(36,36,128,128,52,lin([a,b]));shadow('rgba(255,255,255,.9)',14,-7,-6);box(44,44,112,112,46,b);shadow(d+'aa',6,5,3);glyph('#fff',11,78);});break;
+  case '뉴모피즘':fill('#e4e7ee');inner(()=>{shadow('#a7adbd',22,12,12);box(38,38,124,124,40,'#e4e7ee');shadow('#fff',22,-12,-12);box(38,38,124,124,40,'#e4e7ee');shadow('transparent',0);glyph(lin([b,d],[60,60,140,140]),8,78);});break;
+  case '오로라':fill(d);blob(40,40,120,a);blob(175,70,110,b);blob(70,180,120,'#62e8d0');blob(170,180,90,'#ff8ad8');inner(()=>{shadow('rgba(0,0,0,.3)',12,4);glyph('#fff',7.500,102);});break;
+  case '서리 유리':fill(lin(['#fbfcff','#dfe3ea']));dot(66,72,48,lin([a,b],[20,20,110,120]));dot(142,138,44,lin([b,d],[100,90,185,180]));inner(()=>{shadow('rgba(30,35,60,.2)',16,8);box(36,36,128,128,36,'rgba(255,255,255,.52)');shadow('transparent',0);rim(36,36,128,128,36);glyph(d,7.500,84);});break;
+  case '메탈':{fill(lin([a,'#fff',b,d,b,a]));x.globalAlpha=.12;for(let i=0;i<200;i+=4){x.fillStyle=i%8?'#fff':'#000';x.fillRect(0,i,200,1);}x.globalAlpha=1;inner(()=>{glyph('#fff',9,104,1.500,2.500);glyph(lin(['#33363d','#0d0e11'],[0,50,0,150]),9,104);});break;}
+  case '종이 겹침':fill(d);inner(()=>{});[[92,b],[70,a],[48,'#fff']].forEach(([r,f])=>{shadow('rgba(0,0,0,.3)',12,6);dot(100,100,r*(.35+scale*.65),f);});shadow('transparent',0);inner(()=>glyph(d,8,62));break;
+  case '레트로':fill('#f6ead2');['#e4572e','#f3a712','#a8c686',b,d].forEach((f,i)=>{x.fillStyle=f;x.fillRect(0,128+i*15,200,15);});inner(()=>{dot(100,86,58,d);glyph('#f6ead2',8,76,0,-14);});break;
+  case '팝아트':fill(a);for(let i=8;i<200;i+=18)for(let j=8;j<200;j+=18)dot(i,j,3.500,b);inner(()=>{glyph('#111',15,100,8,8);glyph(d,15,100,3,3);glyph('#fff',7,100);});break;
+  case '스티커':fill(lin([a,b]));inner(()=>{x.translate(100,100);x.rotate(-.12);x.translate(-100,-100);shadow('rgba(0,0,0,.28)',12,7);box(38,38,124,124,46,'#fff');shadow('transparent',0);box(48,48,104,104,38,lin([b,d],[48,48,152,152]));glyph('#fff',9,70);});break;
+  case '라인':fill(d);inner(()=>{x.strokeStyle=a;x.lineWidth=3;x.stroke(new Path2D(rr(30,30,140,140,42)));glyph(a,4.500,92);});break;
+  case '듀오톤':fill(d);x.fillStyle=b;x.beginPath();x.moveTo(0,0);x.lineTo(200,0);x.lineTo(0,200);x.fill();inner(()=>{glyph('rgba(0,0,0,.28)',10,106,7,7);glyph(a,10,106);});break;
+  case '픽셀':{fill(d);x.globalAlpha=.25;for(let i=0;i<200;i+=20)for(let j=0;j<200;j+=20)if((i+j)%40)box(i,j,20,20,0,b);x.globalAlpha=1;
+   const m=render(48,scale,{...o,style:STYLES.length}),mx=m.getContext('2d'),p=mx.getImageData(0,0,48,48);for(let i=3;i<p.data.length;i+=4)p.data[i]=p.data[i]>110?255:0;mx.putImageData(p,0,0);
+   x.imageSmoothingEnabled=false;x.filter='brightness(0) opacity(.35)';x.drawImage(m,8,8,200,200);x.filter='none';x.drawImage(m,0,0,200,200);break;}
+  case '노트':fill('#fffdf4');x.strokeStyle='#bcd3ee';x.lineWidth=2;for(let i=32;i<200;i+=26){x.beginPath();x.moveTo(0,i);x.lineTo(200,i);x.stroke();}x.fillStyle='#f09090';x.fillRect(30,0,3,200);inner(()=>{x.translate(100,100);x.rotate(-.06);x.translate(-100,-100);glyph(a,14,100,4,3);glyph(d,5.500,100);});break;
+  case '청사진':fill(d);x.strokeStyle='rgba(255,255,255,.18)';x.lineWidth=1;for(let i=0;i<=200;i+=20){x.beginPath();x.moveTo(i,0);x.lineTo(i,200);x.moveTo(0,i);x.lineTo(200,i);x.stroke();}inner(()=>{x.setLineDash([5,7]);x.strokeStyle='#fff';x.beginPath();x.arc(100,100,72,0,7);x.stroke();x.setLineDash([]);glyph('#fff',3.500,96,0,0,true);});break;
+  case '우주':fill(lin([d,'#07081a']));blob(150,50,90,b);for(let i=0;i<46;i++)dot((i*73+17)%200,(i*131+29)%200,i%7?1:2.200,'rgba(255,255,255,.8)');inner(()=>{x.save();x.translate(100,100);x.rotate(-.35);x.strokeStyle=a+'bb';x.lineWidth=3;x.beginPath();x.ellipse(0,0,86,26,0,0,7);x.stroke();x.restore();shadow(a,16);glyph('#fff',8,90);});break;
+  case '물결':fill(a);[[104,b+'88'],[128,b],[154,d]].forEach(([h,f],i)=>{x.fillStyle=f;x.beginPath();x.moveTo(0,h);x.bezierCurveTo(60,h-34+i*10,120,h+34-i*8,200,h-10);x.lineTo(200,200);x.lineTo(0,200);x.fill();});inner(()=>{shadow('rgba(0,0,0,.3)',10,5);glyph('#fff',8.500,100);});break;
+  default:inner(()=>glyph('#fff',7,128)); // 픽셀 스타일의 바탕 그림
+ }
  return c;
 }
-function preview(){const x=$('preview').getContext('2d');x.drawImage(draw(512,1.08),0,0);}
-COLORS.forEach((c,i)=>{const b=document.createElement('button');b.type='button';b.title=c[0];b.setAttribute('aria-label',c[0]);b.style.background=`linear-gradient(135deg,${c[1]},${c[2]},${c[3]})`;b.setAttribute('aria-pressed',i===0);
- b.onclick=()=>{color=i;[...$('colors').children].forEach((e,j)=>e.setAttribute('aria-pressed',j===i));preview();};$('colors').appendChild(b);});
-$('title').oninput=$('mark').oninput=preview;
+const opt={style:0,color:0,icon:'업로드',text:''};
+let picked=false,group='전체',autoTitle='';
+const firstChar=t=>{const v=t.trim();if(!v)return '';return (window.Intl&&Intl.Segmenter?[...new Intl.Segmenter().segment(v)][0].segment:Array.from(v)[0]).toUpperCase();};
+const appTitle=()=>$('title').value.trim()||autoTitle||'내 앱';
+const guessIcon=t=>{const v=t.toLowerCase();let best=null,len=0;for(const [name,[,keys]] of Object.entries(ICONS))for(const k of keys.split('|'))if(k.length>len&&(/^[a-z]+$/.test(k)?new RegExp('(^|[^a-z])'+k).test(v):v.includes(k))){best=name;len=k.length;}return best;};
+const options=()=>{const mark=$('mark').value.trim();return {...opt,text:mark?firstChar(mark):opt.icon==='글자'?firstChar(appTitle()):''};};
+const draw=(n,scale)=>render(n,scale,options());
+const thumb=(canvas,o)=>{const x=canvas.getContext('2d');x.clearRect(0,0,canvas.width,canvas.height);x.drawImage(render(canvas.width,1,o),0,0);};
+function preview(){thumb($('preview'),options());$('what').textContent=`${STYLES[opt.style]} · ${$('mark').value.trim()?'직접 입력':opt.icon} · ${COLORS[opt.color][0]}`;}
+function tile(box,label,on,click){const b=document.createElement('button');b.type='button';b.className='tile';b.setAttribute('aria-pressed',on);b.setAttribute('aria-label',label);const c=document.createElement('canvas');c.width=c.height=112;const t=document.createElement('span');t.textContent=label;b.append(c,t);b.onclick=click;$(box).appendChild(b);return c;}
+function gallery(){
+ const left=$('styles').scrollLeft,top=$('icons').scrollTop,o=options();
+ $('styles').textContent='';STYLES.forEach((name,i)=>thumb(tile('styles',name,i===opt.style,()=>{opt.style=i;update();}),{...o,style:i}));
+ $('icons').textContent='';
+ const names=group==='전체'?[...Object.keys(ICONS),'글자']:group==='글자'?['글자']:Object.keys(GROUPS[group]);
+ names.forEach(name=>thumb(tile('icons',name,name===opt.icon&&!$('mark').value.trim(),()=>{opt.icon=name;picked=true;$('mark').value='';update();}),{...opt,style:2,color:1,icon:name,text:name==='글자'?firstChar(appTitle()):''}));
+ [...$('colors').children].forEach((e,i)=>e.setAttribute('aria-pressed',i===opt.color));
+ [...$('groups').children].forEach(e=>e.setAttribute('aria-pressed',e.textContent===group));
+ $('styles').scrollLeft=left;$('icons').scrollTop=top;
+}
+function update(){preview();gallery();}
+['전체',...Object.keys(GROUPS),'글자'].forEach(name=>{const b=document.createElement('button');b.type='button';b.textContent=name;b.onclick=()=>{group=name;$('icons').scrollTop=0;gallery();};$('groups').appendChild(b);});
+COLORS.forEach((c,i)=>{const b=document.createElement('button');b.type='button';b.title=c[0];b.setAttribute('aria-label',c[0]);b.style.background=`linear-gradient(135deg,${c[1]},${c[2]},${c[3]})`;b.onclick=()=>{opt.color=i;update();};$('colors').appendChild(b);});
+const rand=n=>Math.floor(Math.random()*n);
+$('random').onclick=()=>{opt.style=rand(STYLES.length);opt.color=rand(COLORS.length);if(!picked&&!guessIcon(appTitle())){const k=Object.keys(ICONS);opt.icon=k[rand(k.length)];}update();};
+$('title').oninput=()=>{if(!picked)opt.icon=guessIcon(appTitle())||'글자';update();};
+$('mark').oninput=update;
 async function guessTitle(){
  autoTitle='';
  const htmls=files.filter(f=>/\.html?$/i.test(f.name)&&!f.name.includes('/'));
  const main=htmls.find(f=>f.name==='index.html')||htmls[0];
  if(main){const t=new DOMParser().parseFromString(await main.blob.text(),'text/html').title.trim();autoTitle=t.includes('�')?'':t;}
  if(!autoTitle&&files[0])autoTitle=(main||files[0]).name.split('/').pop().replace(/\.[^.]*$/,'').replace(/^index$/i,'');
- autoTitle=autoTitle.slice(0,30);$('title').placeholder=autoTitle||'앱 이름';preview();
+ autoTitle=autoTitle.slice(0,30);$('title').placeholder=autoTitle||'앱 이름';
+ if(!picked&&files.length)opt.icon=guessIcon(appTitle())||'글자';update();
 }
 const png=c=>new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error('아이콘을 만들지 못했어요.')),'image/png'));
 // index.html에 아이콘·설치 정보 넣기 (바이트를 그대로 보존해 한글 인코딩이 깨지지 않게)
@@ -165,9 +307,9 @@ async function addApp(list){
  const title=appTitle(),index=list.find(f=>f.name==='index.html');
  index.blob=await inject(index.blob,title);
  const add=(name,blob)=>{const old=list.find(f=>f.name===name);old?old.blob=blob:list.push({name,blob});};
- for(const [name,n,k] of [['app-icon-192.png',192,1.08],['app-icon-512.png',512,1.08],['app-icon-maskable.png',512,.88],['app-icon-apple.png',180,1.08]])add(name,await png(draw(n,k)));
+ for(const [name,n,k] of [['app-icon-192.png',192,1],['app-icon-512.png',512,1],['app-icon-maskable.png',512,.82],['app-icon-apple.png',180,1]])add(name,await png(draw(n,k)));
  const icons=[['app-icon-192.png','192x192','any'],['app-icon-512.png','512x512','any'],['app-icon-maskable.png','512x512','maskable']].map(([src,sizes,purpose])=>({src,sizes,purpose,type:'image/png'}));
- add('app.webmanifest',new Blob([JSON.stringify({name:title,short_name:title.slice(0,12),start_url:'./',scope:'./',display:'standalone',background_color:'#ffffff',theme_color:COLORS[color][2],icons})]));
+ add('app.webmanifest',new Blob([JSON.stringify({name:title,short_name:title.slice(0,12),start_url:'./',scope:'./',display:'standalone',background_color:'#ffffff',theme_color:COLORS[opt.color][2],icons})]));
  add('app-sw.js',new Blob(["self.addEventListener('fetch',function(){});\n"]));
 }
 function show(){$('list').innerHTML=files.map(f=>`<li class="file"><span>${esc(f.name)}</span><span>${size(f.blob.size)}</span></li>`).join('');}
@@ -201,7 +343,7 @@ function listing(list){
   return `<li>${view}<a href="${u}">${n}</a></li>`;}).join('');
  return `<!DOCTYPE html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>파일 목록</title><style>body{margin:0;padding:24px;background:#d9dadd;font-family:system-ui;color:#222}ul{list-style:none;padding:0;max-width:520px}li{background:rgba(255,255,255,.6);border:1px solid #fff;border-radius:24px;padding:16px;margin-bottom:12px;overflow-wrap:anywhere}img,video,audio{display:block;width:100%;border-radius:14px;margin-bottom:8px}a{color:#222;font-weight:700}</style><h2>파일 목록</h2><ul>${items}</ul>`;
 }
-preview();
+update();
 $('form').onsubmit=async ev=>{
  ev.preventDefault();
  const out=$('out'),custom=$('name').value.trim();
